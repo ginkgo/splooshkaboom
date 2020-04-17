@@ -70,7 +70,7 @@ u32 randint(std::mt19937 &rng, u32 max)
 	return dist(rng);
 }
 
-void insert_squid(square_mask &current, u32 squid_length, std::mt19937 &rng)
+square_mask insert_squid(square_mask current, u32 squid_length, std::mt19937 &rng)
 {
 	square_mask new_squid;
 	do {
@@ -100,18 +100,23 @@ void insert_squid(square_mask &current, u32 squid_length, std::mt19937 &rng)
 		}
 	} while ((current & new_squid) != 0);
 
-	current |= new_squid;
+	return new_squid;
 }
 
-square_mask generate_squids(std::mt19937 &rng)
+square_mask generate_squids(std::mt19937 &rng, square_mask &squid2, square_mask &squid3, square_mask &squid4)
 {
-	square_mask square = 0;
+	square_mask current = 0;
 
-	insert_squid(square, 2, rng);
-	insert_squid(square, 3, rng);
-	insert_squid(square, 4, rng);
+	squid2 = insert_squid(current, 2, rng);
+	current |= squid2;
 
-	return square;
+	squid3 = insert_squid(current, 3, rng);
+	current |= squid3;
+
+	squid4 = insert_squid(current, 4, rng);
+	current |= squid4;
+
+	return current;
 }
 
 square_mask nth_set(u32 n, square_mask mask)
@@ -174,12 +179,23 @@ square_mask mutate_pattern(std::mt19937 &rng, square_mask original)
 	return original;
 }
 
+enum class optimization_goal
+{
+	AT_LEAST_1,    /* Hit at least 1 squid */
+	AT_LEAST_2,    /* Hit at least 2 unique squids */
+	AT_LEAST_3,    /* Hit all 3 squids */
+	FIND_SQUID_2,  /* Hit the length 2 squid */
+	MAX_HITS,      /* Find the pattern with the highest number of expected hits */
+};
+
 int main()
 {
 	const u32 PATTERN_SIZE = 8;
 	const u32 CANDIDATE_POPULATION = 1 << 18;
-	const u32 TESTS = 1 << 14;
+	const u32 TESTS = 1 << 12;
 	const u32 ROUNDS = 100;
+
+	const optimization_goal GOAL = optimization_goal::AT_LEAST_1;
 
 	std::random_device dev;
     std::mt19937 rng(dev());
@@ -202,13 +218,49 @@ int main()
 
 		for (u32 test = 0; test < TESTS; ++test)
 		{
-			square_mask board = generate_squids(rng);
+			square_mask s2,s3,s4;
+
+			square_mask board = generate_squids(rng, s2, s3, s4);
 
 			for (auto &candidate : candidates)
 			{
-				/* candidate.first += std::popcount(candidate.second & board); */
+				if (GOAL == optimization_goal::AT_LEAST_1)
+				{
+					candidate.first += (candidate.second & board) ? 1 : 0;
+				}
+				else if (GOAL == optimization_goal::AT_LEAST_2)
+				{
+					u32 hit_count = 0;
 
-				candidate.first += (candidate.second & board) ? 1 : 0;
+					hit_count += (candidate.second & s2) ? 1 : 0;
+					hit_count += (candidate.second & s3) ? 1 : 0;
+					hit_count += (candidate.second & s4) ? 1 : 0;
+
+					candidate.first += (hit_count >= 2) ? 1 : 0;
+				}
+				else if (GOAL == optimization_goal::AT_LEAST_3)
+				{
+					u32 hit_count = 0;
+
+					hit_count += (candidate.second & s2) ? 1 : 0;
+					hit_count += (candidate.second & s3) ? 1 : 0;
+					hit_count += (candidate.second & s4) ? 1 : 0;
+
+					candidate.first += (hit_count >= 3) ? 1 : 0;
+				}
+				else if (GOAL == optimization_goal::FIND_SQUID_2)
+				{
+					candidate.first += (candidate.second & board) ? 1 : 0;
+				}
+				else if (GOAL == optimization_goal::MAX_HITS)
+				{
+					candidate.first += std::popcount(candidate.second & board);
+				}
+				else
+				{
+					__builtin_unreachable();
+				}
+
 			}
 		}
 

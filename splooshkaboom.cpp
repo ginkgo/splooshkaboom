@@ -191,7 +191,7 @@ int main()
 {
 	const u32 PATTERN_SIZE = 8;
 	const u32 CANDIDATE_POPULATION = 1 << 18;
-	const u32 TESTS = 1 << 12;
+	const u32 TESTS = 1 << 14;
 	const u32 ROUNDS = 100;
 
 	const optimization_goal GOAL = optimization_goal::AT_LEAST_1;

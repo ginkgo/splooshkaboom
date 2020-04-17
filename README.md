@@ -20,7 +20,7 @@ Number of candidate patterns to consider per round
 ##### `TESTS`
 Number of tests to perform per round. (i.e. number of layouts that will be generated per round)
 
-##### `ROUDNS`
+##### `ROUNDS`
 Number of test rounds
 
 ##### `GOAL`

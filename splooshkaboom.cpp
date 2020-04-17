@@ -6,7 +6,6 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
-#include <bit>
 
 extern "C"
 {
@@ -160,7 +159,7 @@ square_mask generate_pattern(std::mt19937 &rng, u32 tries)
 
 square_mask mutate_pattern(std::mt19937 &rng, square_mask original)
 {
-	u32 pop = std::popcount(original);
+	u32 pop = __builtin_popcountll(original);
 
 	/* Find random set bit */
 	square_mask set_bit   = nth_set(randint(rng, pop-1), original);
@@ -254,7 +253,7 @@ int main()
 				}
 				else if (GOAL == optimization_goal::MAX_HITS)
 				{
-					candidate.first += std::popcount(candidate.second & board);
+					candidate.first += __builtin_popcountll(candidate.second & board);
 				}
 				else
 				{

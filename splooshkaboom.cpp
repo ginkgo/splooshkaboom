@@ -12,8 +12,19 @@ extern "C"
 #include <x86intrin.h>
 }
 
+using std::cout;
+using std::endl;
+
 typedef uint32_t u32;
 typedef uint64_t square_mask;
+
+struct squid_layout
+{
+	square_mask combined;
+	square_mask squid2;
+	square_mask squid3;
+	square_mask squid4;
+};
 
 #define WIDTH 8
 
@@ -37,28 +48,28 @@ bool square_get(square_mask mask, u32 x, u32 y)
 
 void print_square(square_mask mask)
 {
-	std::cout << "\n+";
+	cout << "\n+";
 	for (u32 x = 0; x < WIDTH; ++x)
 	{
-		std::cout << "---+";
+		cout << "---+";
 	}
-	std::cout << std::endl;
+	cout << endl;
 
 	for (u32 y = 0; y < WIDTH; ++y)
 	{
-		std::cout << "|";
+		cout << "|";
 		for (u32 x = 0; x < WIDTH; ++x)
 		{
-			std::cout << (square_get(mask, x, y) ? " X |" : "   |");
+			cout << (square_get(mask, x, y) ? " X |" : "   |");
 		}
-		std::cout << std::endl;
+		cout << endl;
 
-		std::cout << "+";
+		cout << "+";
 		for (u32 x = 0; x < WIDTH; ++x)
 		{
-			std::cout << "---+";
+			cout << "---+";
 		}
-		std::cout << std::endl;
+		cout << endl;
 	}
 }
 
@@ -102,20 +113,16 @@ square_mask insert_squid(square_mask current, u32 squid_length, std::mt19937 &rn
 	return new_squid;
 }
 
-square_mask generate_squids(std::mt19937 &rng, square_mask &squid2, square_mask &squid3, square_mask &squid4)
+void generate_squids(std::mt19937 &rng, squid_layout &layout)
 {
-	square_mask current = 0;
+	layout.squid2 = insert_squid(0ull, 2, rng);
+	layout.combined = layout.squid2;
 
-	squid2 = insert_squid(current, 2, rng);
-	current |= squid2;
+	layout.squid3 = insert_squid(layout.combined, 3, rng);
+	layout.combined |= layout.squid3;
 
-	squid3 = insert_squid(current, 3, rng);
-	current |= squid3;
-
-	squid4 = insert_squid(current, 4, rng);
-	current |= squid4;
-
-	return current;
+	layout.squid4 = insert_squid(layout.combined, 4, rng);
+	layout.combined |= layout.squid4;
 }
 
 square_mask nth_set(u32 n, square_mask mask)
@@ -140,6 +147,68 @@ square_mask nth_set(u32 n, square_mask mask)
 
 	/* assert(0); */
 	/* return 0; */
+}
+
+square_mask generate_squid(u32 size, u32 x, u32 y, bool horizontal)
+{
+	square_mask mask = 0;
+
+	for (u32 i = 0; i < size; ++i)
+	{
+		if (horizontal)
+		{
+			square_set(mask, x+i, y);
+		}
+		else
+		{
+			square_set(mask, x, y+i);
+		}
+	}
+
+	return mask;
+}
+
+std::vector<squid_layout> generate_all_possible_squid_layouts()
+{
+	std::vector<squid_layout> layouts;
+	std::vector<square_mask> squids[5];
+
+	for (u32 size = 2; size <= 4; size++)
+	{
+		for (u32 x = 0; x <= 8 - size; ++x)
+		{
+			for (u32 y = 0; y < 8; ++y)
+			{
+				/* cout << size << " " << x << " " << y << endl; */
+				squids[size].push_back(generate_squid(size, x, y, true));
+				squids[size].push_back(generate_squid(size, y, x, false));
+			}
+		}
+	}
+
+	for (auto s2 : squids[2])
+	{
+		for (auto s3 : squids[3])
+		{
+			for (auto s4 : squids[4])
+			{
+				square_mask m = s2;
+
+				if ((s2 & s3) || (s2 & s4) || (s3 & s4))
+				{
+					/* Invalid layout */
+					continue;
+				}
+				else
+				{
+					/* Valid layout - insert into vector */
+					layouts.push_back({s2|s3|s4, s2, s3, s4});
+				}
+			}
+		}
+	}
+
+	return std::move(layouts);
 }
 
 square_mask generate_pattern(std::mt19937 &rng, u32 tries)
@@ -178,32 +247,82 @@ square_mask mutate_pattern(std::mt19937 &rng, square_mask original)
 	return original;
 }
 
-enum class optimization_goal
+namespace optimization_goal
 {
-	AT_LEAST_1,    /* Hit at least 1 squid */
-	AT_LEAST_2,    /* Hit at least 2 unique squids */
-	AT_LEAST_3,    /* Hit all 3 squids */
-	FIND_SQUID_2,  /* Hit the length 2 squid */
-	MAX_HITS,      /* Find the pattern with the highest number of expected hits */
-};
+	/* Hit at least 1 squid */
+	u32 at_least_1(const square_mask &candidate, const squid_layout &layout)
+	{
+		return (layout.combined & candidate) ? 1 : 0;
+	}
+
+	/* Hit at least 2 unique squids */
+	u32 at_least_2(const square_mask &candidate, const squid_layout &layout)
+	{
+		u32 hit_count = 0;
+
+		hit_count += (candidate & layout.squid2) ? 1 : 0;
+		hit_count += (candidate & layout.squid3) ? 1 : 0;
+		hit_count += (candidate & layout.squid4) ? 1 : 0;
+
+		return (hit_count >= 2) ? 1 : 0;
+	}
+
+	/* Hit all 3 squids */
+	u32 at_least_3(const square_mask &candidate, const squid_layout &layout)
+	{
+		u32 hit_count = 0;
+
+		hit_count += (candidate & layout.squid2) ? 1 : 0;
+		hit_count += (candidate & layout.squid3) ? 1 : 0;
+		hit_count += (candidate & layout.squid4) ? 1 : 0;
+
+		return (hit_count >= 3) ? 1 : 0;
+	}
+
+	/* Hit the length 2 squid */
+	u32 find_squid_2(const square_mask &candidate, const squid_layout &layout)
+	{
+		return (layout.squid2 & candidate) ? 1 : 0;
+	}
+
+	/* Hit the length 3 squid */
+	u32 find_squid_3(const square_mask &candidate, const squid_layout &layout)
+	{
+		return (layout.squid3 & candidate) ? 1 : 0;
+	}
+
+	/* Hit the length 4 squid */
+	u32 find_squid_4(const square_mask &candidate, const squid_layout &layout)
+	{
+		return (layout.squid4 & candidate) ? 1 : 0;
+	}
+
+	/* Find the pattern with the highest number of expected hits */
+	u32 max_hits(const square_mask &candidate, const squid_layout &layout)
+	{
+		return __builtin_popcountll(candidate & layout.combined);
+	}
+}
 
 int main()
 {
 	const u32 PATTERN_SIZE = 8;
-	const u32 CANDIDATE_POPULATION = 1 << 18;
+	const u32 CANDIDATE_POPULATION = 1 << 12;
 	const u32 TESTS = 1 << 14;
 	const u32 ROUNDS = 100;
 
-	const optimization_goal GOAL = optimization_goal::AT_LEAST_1;
+	const auto GOAL = optimization_goal::at_least_1;
 
 	std::random_device dev;
     std::mt19937 rng(dev());
 
 	std::vector<std::pair<u32, square_mask> > candidates;
 
+	auto all_layouts = generate_all_possible_squid_layouts();
+
 	for (u32 round = 0; round < ROUNDS; ++round)
 	{
-		std::cout << "Round " << round << std::endl;
+		cout << "Round " << round << endl;
 
 		for (auto &candidate : candidates)
 		{
@@ -217,69 +336,32 @@ int main()
 
 		for (u32 test = 0; test < TESTS; ++test)
 		{
-			square_mask s2,s3,s4;
-
-			square_mask board = generate_squids(rng, s2, s3, s4);
+			squid_layout layout;
+			generate_squids(rng, layout);
 
 			for (auto &candidate : candidates)
 			{
-				if (GOAL == optimization_goal::AT_LEAST_1)
-				{
-					candidate.first += (candidate.second & board) ? 1 : 0;
-				}
-				else if (GOAL == optimization_goal::AT_LEAST_2)
-				{
-					u32 hit_count = 0;
-
-					hit_count += (candidate.second & s2) ? 1 : 0;
-					hit_count += (candidate.second & s3) ? 1 : 0;
-					hit_count += (candidate.second & s4) ? 1 : 0;
-
-					candidate.first += (hit_count >= 2) ? 1 : 0;
-				}
-				else if (GOAL == optimization_goal::AT_LEAST_3)
-				{
-					u32 hit_count = 0;
-
-					hit_count += (candidate.second & s2) ? 1 : 0;
-					hit_count += (candidate.second & s3) ? 1 : 0;
-					hit_count += (candidate.second & s4) ? 1 : 0;
-
-					candidate.first += (hit_count >= 3) ? 1 : 0;
-				}
-				else if (GOAL == optimization_goal::FIND_SQUID_2)
-				{
-					candidate.first += (candidate.second & board) ? 1 : 0;
-				}
-				else if (GOAL == optimization_goal::MAX_HITS)
-				{
-					candidate.first += __builtin_popcountll(candidate.second & board);
-				}
-				else
-				{
-					__builtin_unreachable();
-				}
-
+				candidate.first += GOAL(candidate.second, layout);
 			}
 		}
 
 		std::sort(candidates.begin(), candidates.end(), std::greater<>());
 
-		std::cout << "Best: " << std::endl;
+		cout << "Best: " << endl;
 		print_square(candidates[0].second);
 		for (u32 i = 0; i < 10; ++i)
 		{
 			auto &candidate = candidates[i];
 			u32 hits = candidate.first;
-			std::cout << 100.0 * static_cast<float>(hits) / static_cast<float>(TESTS) << std::endl;
+			cout << 100.0 * static_cast<float>(hits) / static_cast<float>(TESTS) << endl;
 		}
 
-		std::cout << "Worst: " << std::endl;
+		cout << "Worst: " << endl;
 		for (u32 i = 0; i < 10; ++i)
 		{
 			auto &candidate = candidates[candidates.size() - i - 1];
 			u32 hits = candidate.first;
-			std::cout << 100.0 * static_cast<float>(hits) / static_cast<float>(TESTS) << std::endl;
+			cout << 100.0 * static_cast<float>(hits) / static_cast<float>(TESTS) << endl;
 		}
 
 		candidates.resize(candidates.size() / 2);
@@ -291,17 +373,42 @@ int main()
 		}
 	}
 
-	std::cout << "Three best (unique)" << std::endl;
+	/* Take N best performers from last round of GA and test against all combinations */
+	cout << "Doing final rating.." << endl;
+
+	const u32 N = 100;
+	static_assert(N < CANDIDATE_POPULATION);
+
+	candidates.resize(N);
+	for (auto &candidate : candidates)
+	{
+		candidate.first = 0;
+
+		for (const auto &layout : all_layouts)
+		{
+			candidate.first += GOAL(candidate.second, layout);
+		}
+	}
+
+	std::sort(candidates.begin(), candidates.end(), std::greater<>());
+
+	cout << "Three best (unique)" << endl;
 	square_mask last = 0;
 	u32 idx = 0;
-	for (u32 i = 0; i < 3; ++i)
+	for (u32 i = 1; i <= 3; ++i)
 	{
 		while (candidates[idx].second == last)
 		{
 			idx++;
 		}
 
+		cout << "#" << i;
 		print_square(candidates[idx].second);
+		cout << "Probability: "
+			 << 100.0 * static_cast<double>(candidates[idx].first) / static_cast<double>(all_layouts.size())
+			 << "%"
+			 << endl << endl;
+
 		last = candidates[idx].second;
 	}
 }

@@ -16,6 +16,7 @@ using std::cout;
 using std::endl;
 
 typedef uint32_t u32;
+typedef uint64_t u64;
 typedef uint64_t square_mask;
 
 struct squid_layout
@@ -307,7 +308,7 @@ namespace optimization_goal
 int main()
 {
 	const u32 PATTERN_SIZE = 8;
-	const u32 CANDIDATE_POPULATION = 1 << 12;
+	const u32 CANDIDATE_POPULATION = 1 << 14;
 	const u32 TESTS = 1 << 14;
 	const u32 ROUNDS = 100;
 
@@ -316,7 +317,7 @@ int main()
 	std::random_device dev;
     std::mt19937 rng(dev());
 
-	std::vector<std::pair<u32, square_mask> > candidates;
+	std::vector<std::pair<u64, square_mask> > candidates;
 
 	auto all_layouts = generate_all_possible_squid_layouts();
 
@@ -352,7 +353,7 @@ int main()
 		for (u32 i = 0; i < 10; ++i)
 		{
 			auto &candidate = candidates[i];
-			u32 hits = candidate.first;
+			u64 hits = candidate.first;
 			cout << 100.0 * static_cast<float>(hits) / static_cast<float>(TESTS) << endl;
 		}
 
@@ -360,7 +361,7 @@ int main()
 		for (u32 i = 0; i < 10; ++i)
 		{
 			auto &candidate = candidates[candidates.size() - i - 1];
-			u32 hits = candidate.first;
+			u64 hits = candidate.first;
 			cout << 100.0 * static_cast<float>(hits) / static_cast<float>(TESTS) << endl;
 		}
 
@@ -376,10 +377,14 @@ int main()
 	/* Take N best performers from last round of GA and test against all combinations */
 	cout << "Doing final rating.." << endl;
 
+	/* Remove duplicates */
+	std::sort(candidates.begin(), candidates.end(), std::greater<>());
+	candidates.erase( std::unique( candidates.begin(), candidates.end() ), candidates.end() );
+
 	const u32 N = 100;
 	static_assert(N < CANDIDATE_POPULATION);
 
-	candidates.resize(N);
+	candidates.resize(std::min(N, static_cast<u32>(candidates.size())));
 	for (auto &candidate : candidates)
 	{
 		candidate.first = 0;
@@ -392,23 +397,14 @@ int main()
 
 	std::sort(candidates.begin(), candidates.end(), std::greater<>());
 
-	cout << "Three best (unique)" << endl;
-	square_mask last = 0;
-	u32 idx = 0;
-	for (u32 i = 1; i <= 3; ++i)
+	cout << "Five best (unique)" << endl;
+	for (u32 i = 0; i < std::min(5, static_cast<int>(candidates.size())); ++i)
 	{
-		while (candidates[idx].second == last)
-		{
-			idx++;
-		}
-
-		cout << "#" << i;
-		print_square(candidates[idx].second);
+		cout << "#" << i+1;
+		print_square(candidates.at(i).second);
 		cout << "Probability: "
-			 << 100.0 * static_cast<double>(candidates[idx].first) / static_cast<double>(all_layouts.size())
+			 << 100.0 * static_cast<double>(candidates.at(i).first) / static_cast<double>(all_layouts.size())
 			 << "%"
 			 << endl << endl;
-
-		last = candidates[idx].second;
 	}
 }

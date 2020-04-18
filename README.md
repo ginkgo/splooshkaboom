@@ -8,7 +8,7 @@ I'm solving this using a genetic algorithm that generates a candidate set of ran
 
 It does this in rounds. At the end of each round, the worst performing half is discarded. The best performing quarter is used to generate mutated children where some random hit is moved to another random location. After that the program generates some new candidates to top the candidate set back up to its original size. After that a new round of simulations start. There's 100 rounds in total.
 
-At the end it will test the best performers against all possible squid layouts and list the 3 best unique patterns along with their probabilities.
+At the end it will test the best performers against all possible squid layouts and list the 5 best unique patterns along with their probabilities.
 
 You can tune various parameters by changing the constants defined in the `main()` function in `splooshkaboom.cpp`:
 

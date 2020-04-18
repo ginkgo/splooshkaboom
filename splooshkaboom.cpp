@@ -315,7 +315,7 @@ int main()
 	const auto GOAL = optimization_goal::at_least_1;
 
 	std::random_device dev;
-    std::mt19937 rng(dev());
+	std::mt19937 rng(dev());
 
 	std::vector<std::pair<u64, square_mask> > candidates;
 

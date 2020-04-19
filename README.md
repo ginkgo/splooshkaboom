@@ -34,6 +34,9 @@ A rating function for various optimization goals can be assigned here. The follo
 - `optimization_goal::find_squid_3` Hit the length 3 squid
 - `optimization_goal::find_squid_4` Hit the length 4 squid
 - `optimization_goal::max_hits` Find the pattern with the highest number of expected hits
+- `optimization_goal::find_0` Hit nothing - Not very useful but still interesting :)
+- `optimization_goal::find_1` Hit exactly one squid
+- `optimization_goal::find_2` Hit exactly two squids
 
 ## Compiling and Running
 On Linux call

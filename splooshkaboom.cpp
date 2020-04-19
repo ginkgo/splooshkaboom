@@ -341,13 +341,43 @@ namespace optimization_goal
 	{
 		return __builtin_popcountll(candidate & layout.combined);
 	}
+
+	/* Find nothing - anti-optimization*/
+	u32 find_0(const square_mask &candidate, const squid_layout &layout)
+	{
+		return (candidate & layout.combined) ? 0 : 1;
+	}
+
+	/* Find exactly one squid */
+	u32 find_1(const square_mask &candidate, const squid_layout &layout)
+	{
+		u32 hit_count = 0;
+
+		hit_count += (candidate & layout.squid2) ? 1 : 0;
+		hit_count += (candidate & layout.squid3) ? 1 : 0;
+		hit_count += (candidate & layout.squid4) ? 1 : 0;
+
+		return (hit_count == 1) ? 1 : 0;
+	}
+
+	/* Find exactly two squids */
+	u32 find_2(const square_mask &candidate, const squid_layout &layout)
+	{
+		u32 hit_count = 0;
+
+		hit_count += (candidate & layout.squid2) ? 1 : 0;
+		hit_count += (candidate & layout.squid3) ? 1 : 0;
+		hit_count += (candidate & layout.squid4) ? 1 : 0;
+
+		return (hit_count == 2) ? 1 : 0;
+	}
 }
 
 int main()
 {
 	const u32 PATTERN_SIZE = 8;
-	const u32 CANDIDATE_POPULATION = 1 << 14;
-	const u32 TESTS = 1 << 14;
+	const u32 CANDIDATE_POPULATION = 1 << 13;
+	const u32 TESTS = 1 << 13;
 	const u32 ROUNDS = 100;
 
 	const auto GOAL = optimization_goal::at_least_1;

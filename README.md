@@ -1,6 +1,6 @@
 # Sploosh Kaboom Starting Pattern Search
 
-This program is trying to answer a question of [Linkus7](https://www.twitch.tv/linkus7) regarding the [Sinking Ships Minigame in Wind Waker](https://zelda.fandom.com/wiki/Sinking_Ships):
+This program is trying to answer a question by [Linkus7](https://www.twitch.tv/linkus7) regarding the [Sinking Ships Minigame in Wind Waker](https://zelda.fandom.com/wiki/Sinking_Ships):
 
 > What is the optimal pattern to hit at least one squid with 8 shots?
 
@@ -50,6 +50,10 @@ then run with
 ```
 $ ./splooshkaboom
 ```
+
+## Ordered version
+
+There is also a variant of the program that considers the order of shots. You can find that one under `splooshkaboom_ordered.cpp`. The compiled binary is `splooshkaboom_ordered`.
 
 ## Findings
 The resulting winning patterns are surprizingly consistent.

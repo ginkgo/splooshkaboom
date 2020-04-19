@@ -408,91 +408,21 @@ namespace optimization_goal
 		return (layout.combined & candidate.get_mask()) ? 1 : 0;
 	}
 
-	/* Hit at least 2 unique squids */
+	/* Find the first squid as quickly as possible */
 	template<u32 N>
-	u32 at_least_2(const start_pattern<N> &candidate, const squid_layout &layout)
+	double fast_hit(const start_pattern<N> &candidate, const squid_layout &layout)
 	{
-		u32 hit_count = 0;
+		u32 score = N;
+		for (u32 i = 0; i < N; ++i)
+		{
+			if (layout.combined & (1ull << candidate.positions[i]))
+			{
+				break;
+			}
+			score--;
+		}
 
-		hit_count += (candidate.get_mask() & layout.squid2) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid3) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid4) ? 1 : 0;
-
-		return (hit_count >= 2) ? 1 : 0;
-	}
-
-	/* Hit all 3 squids */
-	template<u32 N>
-	u32 at_least_3(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		u32 hit_count = 0;
-
-		hit_count += (candidate.get_mask() & layout.squid2) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid3) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid4) ? 1 : 0;
-
-		return (hit_count >= 3) ? 1 : 0;
-	}
-
-	/* Hit the length 2 squid */
-	template<u32 N>
-	u32 find_squid_2(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		return (layout.squid2 & candidate.get_mask()) ? 1 : 0;
-	}
-
-	/* Hit the length 3 squid */
-	template<u32 N>
-	u32 find_squid_3(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		return (layout.squid3 & candidate.get_mask()) ? 1 : 0;
-	}
-
-	/* Hit the length 4 squid */
-	template<u32 N>
-	u32 find_squid_4(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		return (layout.squid4 & candidate.get_mask()) ? 1 : 0;
-	}
-
-	/* Find the pattern with the highest number of expected hits */
-	template<u32 N>
-	u32 max_hits(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		return __builtin_popcountll(candidate.get_mask() & layout.combined);
-	}
-
-	/* Find nothing - anti-optimization*/
-	template<u32 N>
-	u32 find_0(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		return (candidate.get_mask() & layout.combined) ? 0 : 1;
-	}
-
-	/* Find exactly one squid */
-	template<u32 N>
-	u32 find_1(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		u32 hit_count = 0;
-
-		hit_count += (candidate.get_mask() & layout.squid2) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid3) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid4) ? 1 : 0;
-
-		return (hit_count == 1) ? 1 : 0;
-	}
-
-	/* Find exactly two squids */
-	template<u32 N>
-	u32 find_2(const start_pattern<N> &candidate, const squid_layout &layout)
-	{
-		u32 hit_count = 0;
-
-		hit_count += (candidate.get_mask() & layout.squid2) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid3) ? 1 : 0;
-		hit_count += (candidate.get_mask() & layout.squid4) ? 1 : 0;
-
-		return (hit_count == 2) ? 1 : 0;
+		return static_cast<double>(score) / static_cast<double>(N);
 	}
 }
 
@@ -503,7 +433,7 @@ int main()
 	const u32 TESTS = 1 << 13;
 	const u32 ROUNDS = 100;
 
-	const auto GOAL = optimization_goal::at_least_1<PATTERN_SIZE>;
+	const auto GOAL = optimization_goal::fast_hit<PATTERN_SIZE>;
 
 	std::random_device dev;
 	std::mt19937 rng(dev());
@@ -511,15 +441,6 @@ int main()
 	std::vector<std::pair<double, start_pattern<PATTERN_SIZE> > > candidates;
 
 	auto all_layouts = generate_all_possible_squid_layouts();
-
-
-	/* start_pattern<PATTERN_SIZE> pattern(rng); */
-	/* for (u32 i = 0; i < 10; ++i) */
-	/* { */
-	/* 	pattern.mutate(rng); */
-	/* 	pattern.print(); */
-	/* } */
-	/* return 0; */
 
 	for (u32 round = 0; round < ROUNDS; ++round)
 	{

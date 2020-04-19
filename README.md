@@ -52,31 +52,7 @@ $ ./splooshkaboom
 The resulting winning patterns are surprizingly consistent.
 
 There's essentially two patterns that perform best (along with their flipped variant). Each give about 87% chance to hit at least one squid.
-
-### Wind Mill
-```
-+---+---+---+---+---+---+---+---+
-|   |   |   |   |   |   |   |   |
-+---+---+---+---+---+---+---+---+
-|   |   |   | X |   |   |   |   |
-+---+---+---+---+---+---+---+---+
-|   |   |   |   | X |   |   |   |
-+---+---+---+---+---+---+---+---+
-|   |   | X |   |   |   | X |   |
-+---+---+---+---+---+---+---+---+
-|   | X |   |   |   | X |   |   |
-+---+---+---+---+---+---+---+---+
-|   |   |   | X |   |   |   |   |
-+---+---+---+---+---+---+---+---+
-|   |   |   |   | X |   |   |   |
-+---+---+---+---+---+---+---+---+
-|   |   |   |   |   |   |   |   |
-+---+---+---+---+---+---+---+---+
-Probability(at least 1): 86.5911%
-Probability(at least 2): 41.2522%
-Probability(at least 3): 6.29987%
-
-```
+These are also the patterns that perform the best for finding at least 2 or all 3 squids, although the probability of those are of course lower.
 
 ### Two Lines
 ```
@@ -97,14 +73,31 @@ Probability(at least 3): 6.29987%
 +---+---+---+---+---+---+---+---+
 |   |   |   |   |   |   |   |   |
 +---+---+---+---+---+---+---+---+
-Probability(at least 1): 86.5904%
-Probability(at least 2): 41.2515%
-Probability(at least 3): 6.30119%
-
+Probability(at least 1): 87.0524%
+Probability(at least 2): 42.5694%
+Probability(at least 3): 6.81987%
 ```
 
-These also seem to be the patterns that perform the best for finding at least 2 or all 3 squids, although the probability of those are of course lower.
-
-## Future Work
-
-The generated layouts have varying probabilities to be generated. This is currently not considered when rating the final candidates against all possible layout combinations.
+### Wind Mill
+```
++---+---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+---+
+|   |   |   | X |   |   |   |   |
++---+---+---+---+---+---+---+---+
+|   |   |   |   | X |   |   |   |
++---+---+---+---+---+---+---+---+
+|   |   | X |   |   |   | X |   |
++---+---+---+---+---+---+---+---+
+|   | X |   |   |   | X |   |   |
++---+---+---+---+---+---+---+---+
+|   |   |   | X |   |   |   |   |
++---+---+---+---+---+---+---+---+
+|   |   |   |   | X |   |   |   |
++---+---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+---+
+Probability(at least 1): 87.0509%
+Probability(at least 2): 42.5702%
+Probability(at least 3): 6.82052%
+```

@@ -25,6 +25,7 @@ struct squid_layout
 	square_mask squid2;
 	square_mask squid3;
 	square_mask squid4;
+	double probability;
 };
 
 #define WIDTH 8
@@ -128,11 +129,11 @@ void generate_squids(std::mt19937 &rng, squid_layout &layout)
 
 square_mask nth_set(u32 n, square_mask mask)
 {
+	assert(n < __builtin_popcountll(mask));
+
 	return _pdep_u64(1ull << n, mask);
 
 	/* Non-BMI2 implementation in case your CPU lacks HW support: */
-	/* assert(n < 64); */
-	/* assert(n < std::popcount(mask)); */
 
 	/* for (u32 bit = 0; bit < 64; bit++) */
 	/* { */
@@ -187,27 +188,64 @@ std::vector<squid_layout> generate_all_possible_squid_layouts()
 		}
 	}
 
+	double squid2_prob = 1.0 / static_cast<double>(squids[2].size());
 	for (auto s2 : squids[2])
 	{
+		u32 valid_s3s = 0;
 		for (auto s3 : squids[3])
 		{
+			if ((s2 & s3) == 0)
+			{
+				valid_s3s++;
+			}
+		}
+
+		double squid3_prob = 1.0 / static_cast<double>(valid_s3s);
+		for (auto s3 : squids[3])
+		{
+			if (s2 & s3)
+			{
+				/* Invalid layout */
+				continue;
+			}
+
+			u32 valid_s4s = 0;
 			for (auto s4 : squids[4])
 			{
-				square_mask m = s2;
-
-				if ((s2 & s3) || (s2 & s4) || (s3 & s4))
+				if ((s2 & s4) == 0 && (s3 & s4) == 0)
 				{
-					/* Invalid layout */
-					continue;
+					valid_s4s++;
 				}
-				else
+			}
+
+			double squid4_prob = 1.0 / static_cast<double>(valid_s4s);
+			for (auto s4 : squids[4])
+			{
+				if ((s2 & s4) == 0 && (s3 & s4) == 0)
 				{
 					/* Valid layout - insert into vector */
-					layouts.push_back({s2|s3|s4, s2, s3, s4});
+					layouts.push_back({s2|s3|s4, s2, s3, s4, squid2_prob * squid3_prob * squid4_prob});
 				}
 			}
 		}
 	}
+
+#if !NDEBUG
+	/* Verify probabilities by computing sum */
+	double sum = 0.0;
+	double min = 1.0;
+	double max = 0.0;
+	for (auto layout : layouts)
+	{
+		sum += layout.probability;
+		min = std::min(layout.probability, min);
+		max = std::max(layout.probability, max);
+	}
+
+	cout << "Layout probability sum: " << sum << endl;
+	cout << "Minimum layout probability: " << min << endl;
+	cout << "Maximum layout probability: " << max << endl;
+#endif
 
 	return std::move(layouts);
 }
@@ -317,7 +355,7 @@ int main()
 	std::random_device dev;
 	std::mt19937 rng(dev());
 
-	std::vector<std::pair<u64, square_mask> > candidates;
+	std::vector<std::pair<double, square_mask> > candidates;
 
 	auto all_layouts = generate_all_possible_squid_layouts();
 
@@ -391,7 +429,7 @@ int main()
 
 		for (const auto &layout : all_layouts)
 		{
-			candidate.first += GOAL(candidate.second, layout);
+			candidate.first += GOAL(candidate.second, layout) * layout.probability;
 		}
 	}
 
@@ -403,7 +441,7 @@ int main()
 		cout << "#" << i+1;
 		print_square(candidates.at(i).second);
 		cout << "Probability: "
-			 << 100.0 * static_cast<double>(candidates.at(i).first) / static_cast<double>(all_layouts.size())
+			 << 100.0 * static_cast<double>(candidates.at(i).first)
 			 << "%"
 			 << endl << endl;
 	}

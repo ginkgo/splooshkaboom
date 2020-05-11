@@ -1,5 +1,5 @@
 
-all: splooshkaboom splooshkaboom_debug splooshkaboom_ordered splooshkaboom_ordered_debug
+all: splooshkaboom splooshkaboom_debug splooshkaboom_ordered splooshkaboom_ordered_debug splooshkaboom_strategy splooshkaboom_strategy_debug
 
 splooshkaboom: splooshkaboom.cpp
 	g++ --std=c++17 -DNDEBUG -mbmi2 -O2 splooshkaboom.cpp -o splooshkaboom
@@ -12,3 +12,9 @@ splooshkaboom_ordered: splooshkaboom_ordered.cpp
 
 splooshkaboom_ordered_debug: splooshkaboom_ordered.cpp
 	g++ --std=c++17 -mbmi2 -g -O0 splooshkaboom_ordered.cpp -o splooshkaboom_ordered_debug
+
+splooshkaboom_strategy: splooshkaboom_strategy.cpp
+	g++ --std=c++17 -DNDEBUG -mbmi2 -O2 splooshkaboom_strategy.cpp -o splooshkaboom_strategy
+
+splooshkaboom_strategy_debug: splooshkaboom_strategy.cpp
+	g++ --std=c++17 -mbmi2 -g -O0 splooshkaboom_strategy.cpp -o splooshkaboom_strategy_debug
